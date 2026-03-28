@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>바이브코딩 — 느낌으로 코딩하다</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080a0f;
+      --surface: #0e1117;
+      --card: #13171f;
+      --border: #1e2530;
+      --accent: #00e5ff;
+      --accent2: #7b5cfa;
+      --accent3: #ff6b6b;
+      --text: #e8edf5;
+      --muted: #6b7a91;
+      --mono: 'DM Mono', monospace;
+      --sans: 'Noto Sans KR', sans-serif;
+      --display: 'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── Custom Cursor ── */
+    #cursor {
+      width: 12px; height: 12px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: transform 0.08s ease, background 0.2s;
+      mix-blend-mode: screen;
+    }
+    #cursor-trail {
+      width: 36px; height: 36px;
+      border: 1px solid rgba(0,229,255,0.35);
+      border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: transform 0.22s ease;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 4rem;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.4s, background 0.4s, backdrop-filter 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(8,10,15,0.85);
+      border-color: var(--border);
+      backdrop-filter: blur(14px);
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+    .nav-logo span { color: var(--muted); }
+    .nav-links { display: flex; gap: 2.4rem; list-style: none; }
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-cta {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      padding: 0.55rem 1.4rem;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: transparent;
+      cursor: none;
+      letter-spacing: 0.08em;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-cta:hover { background: var(--accent); color: var(--bg); }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 2rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Grid background */
+    #hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* Glow blobs */
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      animation: float 8s ease-in-out infinite;
+    }
+    .blob-1 { width: 500px; height: 500px; background: rgba(0,229,255,0.07); top: -100px; left: -100px; animation-delay: 0s; }
+    .blob-2 { width: 400px; height: 400px; background: rgba(123,92,250,0.08); bottom: -80px; right: -80px; animation-delay: -3s; }
+    .blob-3 { width: 300px; height: 300px; background: rgba(255,107,107,0.05); top: 40%; left: 60%; animation-delay: -5s; }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-30px) scale(1.05); }
+    }
+
+    .hero-tag {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.2em;
+      border: 1px solid rgba(0,229,255,0.3);
+      padding: 0.35rem 1rem;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.2s forwards;
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(3.2rem, 9vw, 7.5rem);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.8rem;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.4s forwards;
+    }
+    h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 60%, var(--accent3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 2.2vw, 1.25rem);
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.75;
+      margin-bottom: 3rem;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.6s forwards;
+      font-weight: 300;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.8s forwards;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 2.2rem;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-decoration: none;
+      cursor: none;
+      transition: box-shadow 0.3s, transform 0.2s;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 40px rgba(0,229,255,0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 2.2rem;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      text-decoration: none;
+      cursor: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+    /* Scroll indicator */
+    .scroll-hint {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      animation: fadeUp 1s 1.4s forwards;
+    }
+    .scroll-hint span {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+    }
+    .scroll-line {
+      width: 1px;
+      height: 48px;
+      background: linear-gradient(to bottom, var(--muted), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+    @keyframes scrollPulse {
+      0%,100% { opacity: 0.3; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(1.15); }
+    }
+
+    /* ── CODE TERMINAL ── */
+    .terminal-wrapper {
+      width: 100%;
+      max-width: 700px;
+      margin: 4rem auto 0;
+      opacity: 0;
+      animation: fadeUp 1s 1s forwards;
+    }
+    .terminal {
+      background: #0a0c12;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,229,255,0.05);
+    }
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: #0d1018;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .terminal-title { margin-left: auto; font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+    .terminal-body { padding: 1.4rem 1.6rem; font-family: var(--mono); font-size: 0.83rem; line-height: 1.85; }
+    .line { display: flex; gap: 0.6rem; }
+    .prompt { color: var(--accent2); user-select: none; }
+    .cmd { color: var(--text); }
+    .comment { color: var(--muted); font-style: italic; }
+    .output { color: var(--accent); padding-left: 1.2rem; }
+    .cursor-blink {
+      display: inline-block;
+      width: 8px; height: 1.1em;
+      background: var(--accent);
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── SECTION COMMON ── */
+    section { position: relative; z-index: 1; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 0.2em;
+      margin-bottom: 1rem;
+    }
+    .section-title {
+      font-family: var(--display);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .section-desc {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      max-width: 500px;
+      margin-top: 1rem;
+      font-weight: 300;
+    }
+
+    /* Reveal animation */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── WHAT IS ── */
+    #what {
+      padding: 8rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .what-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6rem;
+      align-items: center;
+      margin-top: 4rem;
+    }
+    .what-visual {
+      position: relative;
+    }
+    .what-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .what-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+    .what-card-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      margin-bottom: 0.8rem;
+    }
+    .what-card-text {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--text);
+    }
+    .what-card-text .k { color: var(--accent2); }
+    .what-card-text .s { color: #f8b84e; }
+    .what-card-text .c { color: var(--muted); font-style: italic; }
+    .what-card-text .fn { color: var(--accent); }
+    .what-card + .what-card { margin-top: 1rem; }
+    .floating-badge {
+      position: absolute;
+      bottom: -1rem; right: -1rem;
+      background: var(--accent2);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.4rem 0.9rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── FEATURES ── */
+    #features { padding: 8rem 0; background: var(--surface); }
+    .features-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 4rem;
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .feature-item {
+      background: var(--surface);
+      padding: 2.4rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+    .feature-item:hover { background: var(--card); }
+    .feature-item::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0; height: 2px;
+      background: var(--accent);
+      transition: width 0.4s ease;
+    }
+    .feature-item:hover::after { width: 100%; }
+    .feature-icon {
+      font-size: 1.8rem;
+      margin-bottom: 1.2rem;
+      display: block;
+    }
+    .feature-name {
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .feature-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+    .feature-num {
+      position: absolute;
+      top: 1.5rem; right: 1.5rem;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--border);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── HOW IT WORKS ── */
+    #how { padding: 8rem 0; }
+    .how-steps {
+      margin-top: 5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 2.5rem;
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+    .step:first-child { border-top: 1px solid var(--border); }
+    .step-num {
+      font-family: var(--mono);
+      font-size: 3rem;
+      font-weight: 500;
+      color: var(--border);
+      line-height: 1;
+      padding-top: 0.2rem;
+      transition: color 0.3s;
+    }
+    .step:hover .step-num { color: var(--accent); }
+    .step-title {
+      font-family: var(--display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .step-desc {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      font-weight: 300;
+    }
+    .step-tag {
+      display: inline-block;
+      margin-top: 1rem;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--accent2);
+      border: 1px solid rgba(123,92,250,0.35);
+      padding: 0.25rem 0.7rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── COMPARISON ── */
+    #compare { padding: 8rem 0; background: var(--surface); }
+    .compare-table {
+      margin-top: 4rem;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .compare-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-col-title {
+      padding: 1.2rem 1.8rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .compare-col-title.highlight {
+      color: var(--accent);
+      border-left: 2px solid var(--accent);
+    }
+    .compare-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .compare-row:last-child { border-bottom: none; }
+    .compare-row:hover { background: rgba(255,255,255,0.02); }
+    .compare-cell {
+      padding: 1.1rem 1.8rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .compare-cell.highlight {
+      color: var(--text);
+      border-left: 2px solid rgba(0,229,255,0.2);
+      background: rgba(0,229,255,0.03);
+    }
+    .compare-cell .check { color: var(--accent); }
+    .compare-cell .cross { color: var(--accent3); }
+
+    /* ── TESTIMONIALS ── */
+    #voices { padding: 8rem 0; }
+    .testimonial-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 4rem;
+    }
+    .testimonial {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      position: relative;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .testimonial:hover { transform: translateY(-4px); border-color: rgba(0,229,255,0.3); }
+    .testimonial-quote {
+      font-size: 2rem;
+      color: var(--accent);
+      font-family: var(--display);
+      line-height: 1;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    .testimonial-text {
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      font-weight: 300;
+    }
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .author-name { font-family: var(--mono); font-size: 0.78rem; color: var(--text); }
+    .author-role { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+
+    /* ── CTA ── */
+    #cta {
+      padding: 10rem 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #cta::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .cta-title {
+      font-family: var(--display);
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+    }
+    .cta-desc {
+      font-size: 1.05rem;
+      color: var(--muted);
+      margin-bottom: 3rem;
+      font-weight: 300;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .footer-logo { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); }
+    .footer-copy { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); opacity: 0.5; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 1.2rem 2rem; }
+      .nav-links { display: none; }
+      .what-grid { grid-template-columns: 1fr; gap: 3rem; }
+      .feature-grid { grid-template-columns: 1fr 1fr; }
+      .testimonial-grid { grid-template-columns: 1fr; }
+      .compare-header, .compare-row { grid-template-columns: 1fr 1fr 1fr; }
+      footer { padding: 2rem; flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 620px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 50px 1fr; gap: 1.5rem; }
+      .compare-cell { padding: 0.8rem 0.8rem; font-size: 0.78rem; }
+      .compare-col-title { padding: 0.8rem 0.8rem; font-size: 0.68rem; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      body { cursor: auto; }
+      #cursor, #cursor-trail { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">&gt;_ <span>vibe</span>coding</div>
+  <ul class="nav-links">
+    <li><a href="#what">개념</a></li>
+    <li><a href="#features">특징</a></li>
+    <li><a href="#how">방법</a></li>
+    <li><a href="#compare">비교</a></li>
+  </ul>
+  <button class="nav-cta">시작하기 →</button>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="hero-tag">NEW PARADIGM · 2024</div>
+  <h1>느낌으로<br><em>코딩하다</em></h1>
+  <p class="hero-sub">
+    AI와 함께하는 새로운 개발 방식.<br>
+    완벽한 문법보다 명확한 의도가 먼저입니다.
+  </p>
+  <div class="hero-actions">
+    <a href="#how" class="btn-primary">⚡ 바로 시작하기</a>
+    <a href="#what" class="btn-ghost">개념 알아보기 ↓</a>
+  </div>
+
+  <div class="terminal-wrapper">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="dot dot-r"></span>
+        <span class="dot dot-y"></span>
+        <span class="dot dot-g"></span>
+        <span class="terminal-title">vibe-session.sh</span>
+      </div>
+      <div class="terminal-body">
+        <div class="line"><span class="prompt">$</span><span class="cmd"> <span style="color:#f8b84e">생각:</span> "사용자 목록 테이블, 정렬 가능하게, 예쁘게"</span></div>
+        <div class="line"><span class="prompt">$</span><span class="cmd"> vibe generate --prompt "위 요구사항으로 컴포넌트 생성"</span></div>
+        <br>
+        <div class="line"><span class="output">✓ 분석 완료 — 요구사항 파악</span></div>
+        <div class="line"><span class="output">✓ 컴포넌트 설계 — UserTable.tsx</span></div>
+        <div class="line"><span class="output">✓ 정렬 로직 — useSort() 훅 생성</span></div>
+        <div class="line"><span class="output">✓ 스타일링 — Tailwind 적용 완료</span></div>
+        <br>
+        <div class="line"><span class="prompt">$</span><span class="cmd"> <span class="cursor-blink"></span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>SCROLL</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- WHAT IS VIBE CODING -->
+<section id="what">
+  <div class="container">
+    <div class="what-grid">
+      <div class="reveal">
+        <div class="section-label">// 01 · CONCEPT</div>
+        <h2 class="section-title">바이브코딩이란<br>무엇인가?</h2>
+        <p class="section-desc">
+          Andrej Karpathy가 제안한 개념으로, 코드를 한 줄씩 직접 작성하는 대신
+          <strong style="color:var(--text)">AI에게 의도를 전달</strong>하고 결과물을 받아 진화시키는 개발 철학입니다.
+        </p>
+        <p class="section-desc" style="margin-top:1rem">
+          완벽한 구문보다 <strong style="color:var(--accent)">명확한 비전</strong>이 더 중요한 시대.
+          당신은 설계자가 됩니다.
+        </p>
+      </div>
+      <div class="what-visual reveal" style="transition-delay:0.2s">
+        <div class="what-card">
+          <div class="what-card-label">// 전통적 개발</div>
+          <div class="what-card-text">
+            <span class="k">function</span> <span class="fn">fetchData</span>() {<br>
+            &nbsp;&nbsp;<span class="k">const</span> res = <span class="k">await</span> fetch(url);<br>
+            &nbsp;&nbsp;<span class="k">if</span> (!res.ok) <span class="k">throw</span> <span class="k">new</span> Error(...);<br>
+            &nbsp;&nbsp;<span class="k">return</span> res.json();<br>
+            }<br>
+            <span class="c">// 모든 줄을 직접 작성</span>
+          </div>
+        </div>
+        <div class="what-card" style="margin-top:1rem; border-color: rgba(0,229,255,0.3)">
+          <div class="what-card-label" style="color:var(--accent)">// 바이브코딩</div>
+          <div class="what-card-text">
+            <span class="s">"에러 처리 포함해서 API 호출하는</span><br>
+            <span class="s">&nbsp;함수 만들어줘. 로딩 상태도 관리해야 해.</span><br>
+            <span class="s">&nbsp;TypeScript로, 재사용 가능하게."</span><br>
+            <br>
+            <span class="c">// 의도를 전달하면 코드가 생성됨</span>
+          </div>
+          <div class="floating-badge">AI GENERATED</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="features-head">
+      <div class="reveal">
+        <div class="section-label">// 02 · FEATURES</div>
+        <h2 class="section-title">왜 바이브코딩인가</h2>
+      </div>
+      <p class="section-desc reveal" style="transition-delay:0.15s">개발의 패러다임을<br>근본부터 바꿉니다.</p>
+    </div>
+    <div class="feature-grid reveal">
+      <div class="feature-item">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-num">01</div>
+        <div class="feature-name">극한의 생산성</div>
+        <div class="feature-desc">아이디어에서 프로토타입까지 시간이 10배 단축됩니다. 반복 코드에 시간을 낭비하지 마세요.</div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🧠</span>
+        <div class="feature-num">02</div>
+        <div class="feature-name">비전에 집중</div>
+        <div class="feature-desc">구문보다 아키텍처를. 세부 구현보다 전체 설계를 고민하는 고차원적 사고로 전환됩니다.</div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🔄</span>
+        <div class="feature-num">03</div>
+        <div class="feature-name">빠른 이터레이션</div>
+        <div class="feature-desc">"이 부분 좀 더 세련되게" 같은 피드백으로 코드를 빠르게 다듬습니다. 피드백 루프가 극적으로 빨라집니다.</div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🌐</span>
+        <div class="feature-num">04</div>
+        <div class="feature-name">낮은 진입장벽</div>
+        <div class="feature-desc">기획자, 디자이너, PM도 실제로 동작하는 프로토타입을 직접 만들 수 있습니다. 개발의 민주화.</div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🎯</span>
+        <div class="feature-num">05</div>
+        <div class="feature-name">의도 중심 개발</div>
+        <div class="feature-desc">What이 아닌 Why를 코드로. 목적이 명확하면 AI가 최선의 How를 찾아냅니다.</div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">📈</span>
+        <div class="feature-num">06</div>
+        <div class="feature-name">학습 가속</div>
+        <div class="feature-desc">생성된 코드를 분석하며 새로운 패턴을 빠르게 습득합니다. AI가 최고의 페어 프로그래머가 됩니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 03 · PROCESS</div>
+      <h2 class="section-title">어떻게 시작하나요</h2>
+    </div>
+    <div class="how-steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div>
+          <div class="step-title">의도를 자연어로 표현하세요</div>
+          <div class="step-desc">완벽한 기술 용어 없이도 됩니다. "이런 느낌의 버튼, 클릭하면 모달 뜨고, 애니메이션 있었으면 해" — 이 정도면 충분합니다. 의도가 명확할수록 결과가 좋아집니다.</div>
+          <span class="step-tag">NATURAL LANGUAGE</span>
+        </div>
+      </div>
+      <div class="step reveal" style="transition-delay:0.1s">
+        <div class="step-num">02</div>
+        <div>
+          <div class="step-title">AI와 대화하며 정제하세요</div>
+          <div class="step-desc">첫 결과물이 완벽하지 않아도 됩니다. "이 부분은 다르게", "색상을 좀 더 진하게", "반응형으로 바꿔줘" — 대화하듯 수정해 나가세요.</div>
+          <span class="step-tag">ITERATIVE</span>
+        </div>
+      </div>
+      <div class="step reveal" style="transition-delay:0.2s">
+        <div class="step-num">03</div>
+        <div>
+          <div class="step-title">이해하고, 수정하고, 소유하세요</div>
+          <div class="step-desc">생성된 코드를 블랙박스로 두지 마세요. 핵심 로직을 이해하고, 필요한 부분을 직접 수정하는 능력이 바이브코더의 진정한 경쟁력입니다.</div>
+          <span class="step-tag">OWNERSHIP</span>
+        </div>
+      </div>
+      <div class="step reveal" style="transition-delay:0.3s">
+        <div class="step-num">04</div>
+        <div>
+          <div class="step-title">검증하고 배포하세요</div>
+          <div class="step-desc">AI가 생성한 코드도 검토가 필요합니다. 테스트를 작성하고, 엣지 케이스를 확인하고, 프로덕션에 자신 있게 배포하세요.</div>
+          <span class="step-tag">SHIP IT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section id="compare">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 04 · COMPARISON</div>
+      <h2 class="section-title">기존 방식과의 차이</h2>
+    </div>
+    <div class="compare-table reveal" style="margin-top:3rem">
+      <div class="compare-header">
+        <div class="compare-col-title">비교 항목</div>
+        <div class="compare-col-title">전통적 개발</div>
+        <div class="compare-col-title highlight">바이브코딩 ✦</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">프로토타입 속도</div>
+        <div class="compare-cell">며칠 ~ 몇 주</div>
+        <div class="compare-cell highlight"><span class="check">✓</span> 몇 시간 이내</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">진입 난이도</div>
+        <div class="compare-cell">높음 (문법 숙지 필요)</div>
+        <div class="compare-cell highlight"><span class="check">✓</span> 낮음 (의도만으로 시작)</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">반복 작업</div>
+        <div class="compare-cell">개발자가 직접 처리</div>
+        <div class="compare-cell highlight"><span class="check">✓</span> AI에 위임</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">창의적 집중도</div>
+        <div class="compare-cell">구현에 소모됨</div>
+        <div class="compare-cell highlight"><span class="check">✓</span> 설계·비전에 집중</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">팀 협업</div>
+        <div class="compare-cell">개발자 중심</div>
+        <div class="compare-cell highlight"><span class="check">✓</span> 모든 직군 참여 가능</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">코드 품질 관리</div>
+        <div class="compare-cell"><span class="check">✓</span> 직접 제어</div>
+        <div class="compare-cell highlight">검토·수정 필요</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="voices">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// 05 · VOICES</div>
+      <h2 class="section-title">바이브코더들의 이야기</h2>
+    </div>
+    <div class="testimonial-grid">
+      <div class="testimonial reveal">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">기획자인데 이제 혼자 MVP를 만듭니다. 예전엔 상상도 못 했어요. 바이브코딩으로 3일 만에 첫 사이드 프로젝트를 런칭했습니다.</p>
+        <div class="testimonial-author">
+          <div class="avatar" style="background:linear-gradient(135deg,#00e5ff,#7b5cfa)">🙋</div>
+          <div>
+            <div class="author-name">김지현</div>
+            <div class="author-role">Product Manager</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial reveal" style="transition-delay:0.1s">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">10년차 개발자인데 생산성이 3배 됐습니다. 보일러플레이트 작성에 쓰던 시간을 이제 아키텍처 고민에 씁니다. 팀 전체가 도입했어요.</p>
+        <div class="testimonial-author">
+          <div class="avatar" style="background:linear-gradient(135deg,#7b5cfa,#ff6b6b)">👨‍💻</div>
+          <div>
+            <div class="author-name">박성민</div>
+            <div class="author-role">Senior Engineer</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial reveal" style="transition-delay:0.2s">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">디자이너로서 피그마 시안을 실제로 동작하는 코드로 직접 변환합니다. 개발팀과의 핸드오프가 사라졌어요. 협업이 완전히 달라졌습니다.</p>
+        <div class="testimonial-author">
+          <div class="avatar" style="background:linear-gradient(135deg,#ff6b6b,#f8b84e)">🎨</div>
+          <div>
+            <div class="author-name">이소연</div>
+            <div class="author-role">UI/UX Designer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="reveal">
+      <h2 class="cta-title">지금 바로<br><em style="background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-style:normal">느껴보세요</em></h2>
+      <p class="cta-desc">코드를 입력하는 것보다 더 자연스러운 방법이 있습니다.</p>
+      <div class="hero-actions" style="justify-content:center">
+        <a href="#" class="btn-primary">⚡ 무료로 시작하기</a>
+        <a href="#" class="btn-ghost">가이드 읽기 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">&gt;_ vibecoding</div>
+  <div class="footer-copy">© 2024 · Feel the code, not just write it.</div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const trail = document.getElementById('cursor-trail');
+  let mx = 0, my = 0, tx = 0, ty = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.transform = `translate(${mx}px, ${my}px) translate(-50%,-50%)`;
+  });
+
+  (function animTrail() {
+    tx += (mx - tx) * 0.12;
+    ty += (my - ty) * 0.12;
+    trail.style.transform = `translate(${tx}px, ${ty}px) translate(-50%,-50%)`;
+    requestAnimationFrame(animTrail);
+  })();
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.transform += ' scale(2)';
+      cursor.style.background = 'var(--accent2)';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.background = 'var(--accent)';
+    });
+  });
+
+  // Nav scroll
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Reveal on scroll
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => observer.observe(el));
+
+  // Typing effect in terminal
+  const lines = document.querySelectorAll('.terminal-body .line');
+  lines.forEach((line, i) => {
+    line.style.opacity = '0';
+    setTimeout(() => {
+      line.style.opacity = '1';
+      line.style.transition = 'opacity 0.4s';
+    }, 1200 + i * 350);
+  });
+</script>
+</body>
+</html>
